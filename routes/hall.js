@@ -1,8 +1,6 @@
-const router = require('koa-router')()
+var router = require('koa-router')();
 var redis = require("redis");
 var client = redis.createClient();
-
-router.prefix('/hall')
 
 client.on("error", function(err) {
   console.log("Error " + err);
@@ -21,7 +19,7 @@ router.get('/getRoomList', async function (ctx, next) {
   let roomList = [];  //房间列表
 
   let roomNames = await new Promise(function(resolve,reject){
-    client.lrange('room',0,-1,function(err,rs){
+    client.lrange('room',0,20,function(err,rs){
         resolve(rs);
     });
   })
@@ -32,13 +30,13 @@ router.get('/getRoomList', async function (ctx, next) {
           resolve(rs);
       })
     })
-    if(roomInfo!=null){   
+    if(roomInfo!=null){   //list查询出来后最后一个值是null
       if(roomInfo.pwd==''){
         roomInfo.pwd='无';
       }else{
         roomInfo.pwd='有';
       }
-   //   let time = roomInfo.createtime;
+      let time = roomInfo.createtime;
       //roomInfo.createtime = time.getDate();
       roomInfo.room=roomNames[i];
       roomList.push(roomInfo);
@@ -60,14 +58,17 @@ router.get('/newroom', async function (ctx, next) {
           resolve(roomidRS);
     });
   })
-
-  await client.lpush('room','room'+roomid);
+  let room = 'room'+roomid;     //房间键
+  await client.lpush('room',room);
   let roompwd = ctx.query.roompwd;
   let date = new Date();
-  let time = '周'+dayArr[date.getDay()]+' '+((date.getHours()<10)? '0'+date.getHours():date.getHours())+":"+((date.getMinutes()<10)? '0'+date.getMinutes():date.getMinutes());
+  let time = '周'+dayArr[date.getDay()]+' '+(date.getHours())+":"+(date.getMinutes());
   await client.hmset('room'+roomid,'num',1,'start',0,'pwd',roompwd,'createtime',time);
-  
-  ctx.body='roomid='+roomid;
+  let msg={};
+  msg.id = loginbean.id;
+  msg.nicheng = loginbean.nicheng;
+  msg.room = room;
+  ctx.body=msg;
 })
 
 
